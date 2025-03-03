@@ -9,9 +9,12 @@ import { ThxLayout } from "./thx/ThxLayout";
 import { Gap } from "@alfalab/core-components/gap";
 import { StatusBadge } from "@alfalab/core-components/status-badge";
 import { Grid } from "@alfalab/core-components/grid";
+import { sendDataToGA } from "./utils/events.ts";
 
 interface Service {
   name: string;
+  key: string;
+  value: number;
   descriptions: string[];
 }
 
@@ -25,30 +28,42 @@ const one: Category = {
   services: [
     {
       name: "Оплата ипотеки",
+      key: "mortgage",
+      value: 0,
       descriptions: ["Дата и сумма платежа", "Оплата в один клик"],
     },
     {
       name: "Налоги на недвижимость",
+      key: "property_tax",
+      value: 0,
       descriptions: ["Отслеживайте налоги по вашей недвижимости"],
     },
     {
       name: "Домашний интернет",
+      key: "internet",
+      value: 0,
       descriptions: ["Дата и сумма платежа", "Оплата в один клик"],
     },
     {
       name: "Разделить платеж",
+      key: "split_payment",
+      value: 0,
       descriptions: [
         "Возможность разделить оплату счета по ЖКУ на несколько частей или перенести его",
       ],
     },
     {
       name: "Семейный бюджет",
+      key: "family_budget",
+      value: 0,
       descriptions: [
         "Откладывайте деньги на cемейный счет и оплачивайте им регулярные платежи",
       ],
     },
     {
       name: "Оплата ЖКУ кэшбэком",
+      key: "zku_cashback",
+      value: 0,
       descriptions: ["Используйте накопленный кэшбэк для оплаты ЖКУ"],
     },
   ],
@@ -59,12 +74,16 @@ const two: Category = {
   services: [
     {
       name: "Календарь платежей",
+      key: "payment_calendar",
+      value: 0,
       descriptions: [
         "Отслеживайте и управляйте своими расходами, связанными с домом",
       ],
     },
     {
       name: "Статистика и прогноз",
+      key: "statistics",
+      value: 0,
       descriptions: [
         "Графики потребления воды и электричества",
         "Прогноз будущих платежей",
@@ -72,6 +91,8 @@ const two: Category = {
     },
     {
       name: "Оспорить начисление",
+      key: "dispute",
+      value: 0,
       descriptions: ["Поможем оспорить счет ЖКУ, с которым вы не согласны"],
     },
   ],
@@ -82,30 +103,42 @@ const three: Category = {
   services: [
     {
       name: "Оценка стоимости",
+      key: "estimation",
+      value: 0,
       descriptions: [
         "Следите за изменением рыночной стоимости вашей недвижимости",
       ],
     },
     {
       name: "Вызов мастера",
+      key: "master",
+      value: 0,
       descriptions: ["Быстрый вызов электрика, сантехника, аварийной службы"],
     },
     {
       name: "Выписки",
+      key: "extract",
+      value: 0,
       descriptions: ["Заказ справок и выписок по объекту недвижимости"],
     },
     {
       name: "Страховки",
+      key: "insurance",
+      value: 0,
       descriptions: [
         "Оформление и отслеживание ваших страховых полисов по объекту недвижимости",
       ],
     },
     {
       name: "Маркет",
+      key: "market",
+      value: 0,
       descriptions: ["Товары для вашего дома и уюта с кэшбэком от банка"],
     },
     {
       name: "Советы",
+      key: "recommendations",
+      value: 0,
       descriptions: [
         "Раздел с советами, как экономить на расходах по дому, и другой полезной информацией",
       ],
@@ -126,19 +159,31 @@ export const App = () => {
     );
 
     if (find) {
+      service.value = 0;
+
       setSelectedServices([
         ...selectedServices.filter(
           (savedService) => savedService.name !== service.name,
         ),
       ]);
     } else {
+      service.value = 1;
       setSelectedServices([...selectedServices, service]);
     }
   };
 
   const submit = () => {
     setLoading(true);
-    Promise.resolve().then(() => {
+
+    const result = variants
+      .reduce((acc: Service[], curr) => [...acc, ...curr.services], [])
+      .reduce((acc: Record<string, number>, curr) => {
+        acc[curr.key] = curr.value;
+
+        return acc;
+      }, {});
+
+    sendDataToGA({ ...result }).then(() => {
       LS.setItem(LSKeys.ShowThx, true);
       setThx(true);
       setLoading(false);
@@ -175,14 +220,11 @@ export const App = () => {
           {variants.map((variant, index, array) => {
             return (
               <React.Fragment key={variant.name}>
-                {/*<Typography.Text view="primary-large" weight="bold">*/}
-                {/*  {variant.name}*/}
-                {/*</Typography.Text>*/}
                 <Typography.TitleResponsive
-                    tag="h3"
-                    view="small"
-                    font="system"
-                    weight="bold"
+                  tag="h3"
+                  view="small"
+                  font="system"
+                  weight="bold"
                 >
                   {variant.name}
                 </Typography.TitleResponsive>
